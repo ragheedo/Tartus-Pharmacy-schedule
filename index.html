@@ -142,7 +142,7 @@
                         addFridayTimeHeader(tbody);
                         const gR = groups[groupCounter % groups.length]; groupCounter++;
                         const gL = groups[groupCounter % groups.length]; groupCounter++;
-                        renderRows(tbody, gR, gL, dayName, dateStr, 6, rowClass, true);
+                        renderRows(tbody, gR, gL,  dayName, dateStr, 6, rowClass, true);
                     } else {
                         renderRows(tbody, groups[groupCounter % groups.length], null, dayName, dateStr, 3, rowClass, false);
                         groupCounter++;
@@ -177,15 +177,17 @@
                 }
 
                 if (isFriday) {
-                    addEditableCell(row, phar2[i], "name");
-                    addEditableCell(row, phar2[i], "loc");
+                    
                     addEditableCell(row, phar1[i], "name");
                     addEditableCell(row, phar1[i], "loc");
+                    addEditableCell(row, phar2[i], "name");
+                    addEditableCell(row, phar2[i], "loc");
                 } else {
-                    addEditableCell(row, phar1[i * 2 + 1], "name");
-                    addEditableCell(row, phar1[i * 2 + 1], "loc");
+                    
                     addEditableCell(row, phar1[i * 2], "name");
                     addEditableCell(row, phar1[i * 2], "loc");
+                    addEditableCell(row, phar1[i * 2 + 1], "name");
+                    addEditableCell(row, phar1[i * 2 + 1], "loc");
                 }
             }
         }
