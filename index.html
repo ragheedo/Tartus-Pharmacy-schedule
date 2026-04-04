@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام جدولة المناوبات الذكي</title>
+    <title>نظام جدولة المناوبات الذكي - ألوان متناسقة</title>
     
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     
@@ -22,21 +22,25 @@
         table { width: 100%; border-collapse: collapse; border: 2.5px solid black; table-layout: fixed; }
         td, th { border: 1.5px solid black; padding: 8px; text-align: center; vertical-align: middle; font-weight: bold; overflow: hidden; }
         
+        /* جعل الاسم والعنوان يظهران بدون خلفيات منفصلة ليتخذا لون الصف */
+        .ph-name, .ph-loc { background-color: transparent !important; }
+        .ph-name { width: 150px; font-size: 15px; color: #000; }
+        .ph-loc { font-size: 12px; font-weight:800; color: #333; }
+
+        /* تعديل خلايا اليوم والتاريخ لتظل بيضاء دائماً */
         .day-cell, .date-cell { width: 45px; background-color: #fff !important; }
-        
-        /* جعل التاريخ واليوم يظهران بشكل طولي ومقلوب */
+
+        [contenteditable="true"]:hover { background-color: rgba(255,255,255,0.5); cursor: edit; }
+        [contenteditable="true"]:focus { outline: 2px solid #2c3e50; background: #fff; }
+
         .vertical-text { 
             writing-mode: vertical-rl; 
             transform: rotate(180deg); 
             white-space: nowrap; 
             font-size: 16px;
-            display: inline-block;
         }
 
-        .ph-name { width: 150px; font-size: 15px; color: #000; background: rgba(0,0,0,0.05); }
-        .ph-loc { font-size: 12px; font-weight: normal; color: #333; background: #fff; }
-
-        /* ألوان الأيام */
+        /* ألوان الأيام الموحدة */
         .day-sat { background-color: #e3f2fd !important; }
         .day-sun { background-color: #fce4ec !important; }
         .day-mon { background-color: #f1f8e9 !important; }
@@ -47,20 +51,13 @@
 
         .actions { text-align: center; margin-top: 20px; }
         button { 
-            background: #2c3e50; 
-            color: #fff; 
-            padding: 10px 25px; 
-            border: none; 
-            cursor: pointer; 
-            font-size: 16px; 
-            border-radius: 5px; 
-            margin: 5px; 
+            background: #2c3e50; color: #fff; padding: 10px 25px; 
+            border: none; cursor: pointer; font-size: 16px; border-radius: 5px; margin: 5px; 
         }
         .btn-excel { background: #27ae60; }
-        
-        input { padding: 8px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; width: 140px; }
+        .edit-hint { color: #e67e22; font-size: 14px; margin-bottom: 10px; display: block; text-align: center; }
 
-        @media print { .setup-area, .actions { display: none; } body { margin: 0; } }
+        @media print { .setup-area, .actions, .edit-hint { display: none; } body { margin: 0; } }
     </style>
 </head>
 <body>
@@ -71,6 +68,8 @@
         <label>ابدأ بالمجموعة:</label> <input type="number" id="startGroup" value="1" min="1" style="width: 60px;">
         <button onclick="buildTable()">توليد الجدول</button>
     </div>
+
+    <span class="edit-hint">* يمكنك الضغط على أي اسم أو عنوان لتعديله يدوياً.</span>
 
     <table id="scheduleTable">
         <tbody></tbody>
@@ -105,16 +104,14 @@
                 while (current <= endLimit) {
                     const dayIndex = current.getDay();
                     const dayName = current.toLocaleDateString('ar-EG', {weekday: 'long'});
-                    
-                    // الترتيب مقلوب كما طلبت (سنة/شهر/يوم) وفي سطر واحد
                     const d = current.getDate().toString().padStart(2, '0');
                     const m = (current.getMonth()+1).toString().padStart(2, '0');
                     const y = current.getFullYear();
-                    const dateStr = `${y}/${m}/${d}`; // سطر واحد بدون <br>
+                    const dateStr = `${y}/${m}/${d}`; 
                     
                     const rowClass = dayClasses[dayIndex];
 
-                    if (dayIndex === 5) { // الجمعة
+                    if (dayIndex === 5) {
                         const gR = groups[groupCounter % groups.length]; groupCounter++;
                         const gL = groups[groupCounter % groups.length]; groupCounter++;
                         renderRows(tbody, gR, gL, dayName, dateStr, 6, rowClass, true);
@@ -135,7 +132,7 @@
 
             for (let i = 0; i < rowSpan; i++) {
                 const row = tbody.insertRow();
-                row.classList.add(rowClass);
+                row.classList.add(rowClass); // تطبيق لون اليوم على كامل الصف
 
                 if (i === 0) {
                     const cDay = row.insertCell(); cDay.rowSpan = rowSpan; cDay.className = "day-cell";
@@ -145,21 +142,26 @@
                 }
 
                 if (isFriday) {
-                    const pL = phar2[i];
-                    row.insertCell().innerText = pL ? pL.name : "---";
-                    row.insertCell().innerText = pL ? pL.loc : "---";
-                    const pR = phar1[i];
-                    row.insertCell().innerText = pR ? pR.name : "---";
-                    row.insertCell().innerText = pR ? pR.loc : "---";
+                    // توزيع الجمعة (الاسم ثم العنوان للمجموعة اليسرى ثم الاسم والعنوان لليمنى)
+                    addEditableCell(row, phar2[i], "name");
+                    addEditableCell(row, phar2[i], "loc");
+                    addEditableCell(row, phar1[i], "name");
+                    addEditableCell(row, phar1[i], "loc");
                 } else {
-                    const pLeft = phar1[i * 2 + 1];
-                    row.insertCell().innerText = pLeft ? pLeft.name : "---";
-                    row.insertCell().innerText = pLeft ? pLeft.loc : "---";
-                    const pRight = phar1[i * 2];
-                    row.insertCell().innerText = pRight ? pRight.name : "---";
-                    row.insertCell().innerText = pRight ? pRight.loc : "---";
+                    // توزيع الأيام العادية
+                    addEditableCell(row, phar1[i * 2 + 1], "name");
+                    addEditableCell(row, phar1[i * 2 + 1], "loc");
+                    addEditableCell(row, phar1[i * 2], "name");
+                    addEditableCell(row, phar1[i * 2], "loc");
                 }
             }
+        }
+
+        function addEditableCell(row, phar, type) {
+            const cell = row.insertCell();
+            cell.className = type === "name" ? "ph-name" : "ph-loc";
+            cell.innerText = phar ? phar[type] : "---";
+            cell.contentEditable = "true";
         }
 
         function exportToExcel() {
