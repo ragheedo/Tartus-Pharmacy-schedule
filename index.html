@@ -2,28 +2,65 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>نظام جدولة المناوبات الذكي</title>
+    
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
     <style>
-        body { font-family: 'Arial', sans-serif; margin: 20px; background: #fff; }
-        .setup-area { background: #f8f9fa; padding: 20px; border: 1px solid #ddd; margin-bottom: 25px; border-radius: 8px; text-align: center; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #fff; }
         
-        table { width: 100%; border-collapse: collapse; border: 2.5px solid black; }
-        td, th { border: 1.5px solid black; padding: 8px; text-align: center; vertical-align: middle; font-weight: bold; }
-        
-        .day-cell, .date-cell { width: 60px; background-color: #fff !important; }
-        .vertical-text { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 18px; white-space: nowrap; }
-        
-        .ph-name { width: 150px; font-size: 15px; color: #000; }
-        .ph-loc { width: 300px; font-size: 13px; font-weight: normal; color: #333; }
+        .setup-area { 
+            background: #f8f9fa; 
+            padding: 20px; 
+            border: 1px solid #ddd; 
+            margin-bottom: 25px; 
+            border-radius: 8px; 
+            text-align: center; 
+        }
 
-        /* تمييز خلفية يوم الجمعة */
-        .friday-row { background-color: #fff9c4 !important; }
+        table { width: 100%; border-collapse: collapse; border: 2.5px solid black; table-layout: fixed; }
+        td, th { border: 1.5px solid black; padding: 8px; text-align: center; vertical-align: middle; font-weight: bold; overflow: hidden; }
         
-        button { background: #2c3e50; color: #fff; padding: 10px 30px; border: none; cursor: pointer; font-size: 16px; border-radius: 5px; }
-        input { padding: 8px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; }
-        label { font-weight: bold; margin-right: 10px; }
+        .day-cell, .date-cell { width: 45px; background-color: #fff !important; }
+        
+        /* جعل التاريخ واليوم يظهران بشكل طولي ومقلوب */
+        .vertical-text { 
+            writing-mode: vertical-rl; 
+            transform: rotate(180deg); 
+            white-space: nowrap; 
+            font-size: 16px;
+            display: inline-block;
+        }
 
-        @media print { .setup-area { display: none; } body { margin: 0; } }
+        .ph-name { width: 150px; font-size: 15px; color: #000; background: rgba(0,0,0,0.05); }
+        .ph-loc { font-size: 12px; font-weight: normal; color: #333; background: #fff; }
+
+        /* ألوان الأيام */
+        .day-sat { background-color: #e3f2fd !important; }
+        .day-sun { background-color: #fce4ec !important; }
+        .day-mon { background-color: #f1f8e9 !important; }
+        .day-tue { background-color: #ede7f6 !important; }
+        .day-wed { background-color: #e0f2f1 !important; }
+        .day-thu { background-color: #fff3e0 !important; }
+        .day-fri { background-color: #fff9c4 !important; }
+
+        .actions { text-align: center; margin-top: 20px; }
+        button { 
+            background: #2c3e50; 
+            color: #fff; 
+            padding: 10px 25px; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 16px; 
+            border-radius: 5px; 
+            margin: 5px; 
+        }
+        .btn-excel { background: #27ae60; }
+        
+        input { padding: 8px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; width: 140px; }
+
+        @media print { .setup-area, .actions { display: none; } body { margin: 0; } }
     </style>
 </head>
 <body>
@@ -31,16 +68,22 @@
     <div class="setup-area">
         <label>من تاريخ:</label> <input type="date" id="startInput">
         <label>إلى تاريخ:</label> <input type="date" id="endInput">
-        <label>ابدأ بالمجموعة رقم:</label> <input type="number" id="startGroup" value="1" min="1" style="width: 60px;">
+        <label>ابدأ بالمجموعة:</label> <input type="number" id="startGroup" value="1" min="1" style="width: 60px;">
         <button onclick="buildTable()">توليد الجدول</button>
     </div>
 
     <table id="scheduleTable">
-        <tbody>
-            </tbody>
+        <tbody></tbody>
     </table>
 
+    <div class="actions">
+        <button class="btn-excel" onclick="exportToExcel()">تحميل كملف Excel</button>
+        <button onclick="window.print()">طباعة الجدول / PDF</button>
+    </div>
+
     <script>
+        const dayClasses = ["day-sun", "day-mon", "day-tue", "day-wed", "day-thu", "day-fri", "day-sat"];
+
         async function buildTable() {
             try {
                 const res = await fetch('pharmacies.json');
@@ -51,8 +94,7 @@
                 const startGroupNum = parseInt(document.getElementById('startGroup').value) - 1; 
 
                 const tbody = document.querySelector('#scheduleTable tbody');
-
-                if (!startVal || !endVal) return alert("يرجى إدخال التواريخ");
+                if (!startVal || !endVal) return alert("يرجى اختيار التواريخ");
 
                 let current = new Date(startVal);
                 const endLimit = new Date(endVal);
@@ -61,88 +103,69 @@
                 let groupCounter = startGroupNum;
 
                 while (current <= endLimit) {
-                    const isFriday = current.getDay() === 5;
+                    const dayIndex = current.getDay();
                     const dayName = current.toLocaleDateString('ar-EG', {weekday: 'long'});
-                    const dateStr = `${current.getDate()}/${(current.getMonth()+1).toString().padStart(2, '0')}/${current.getFullYear()}`;
+                    
+                    // الترتيب مقلوب كما طلبت (سنة/شهر/يوم) وفي سطر واحد
+                    const d = current.getDate().toString().padStart(2, '0');
+                    const m = (current.getMonth()+1).toString().padStart(2, '0');
+                    const y = current.getFullYear();
+                    const dateStr = `${y}/${m}/${d}`; // سطر واحد بدون <br>
+                    
+                    const rowClass = dayClasses[dayIndex];
 
-                    if (isFriday) {
-                        // جلب المجموعتين المتقابلتين ليوم الجمعة
-                        const groupRight = groups[groupCounter % groups.length];
-                        groupCounter++;
-                        const groupLeft = groups[groupCounter % groups.length];
-                        groupCounter++;
-
-                        renderFridaySideBySide(tbody, groupRight, groupLeft, dayName, dateStr);
+                    if (dayIndex === 5) { // الجمعة
+                        const gR = groups[groupCounter % groups.length]; groupCounter++;
+                        const gL = groups[groupCounter % groups.length]; groupCounter++;
+                        renderRows(tbody, gR, gL, dayName, dateStr, 6, rowClass, true);
                     } else {
-                        // يوم عادي: مجموعة واحدة في 3 صفوف (صيدليتان في كل صف)
-                        renderNormalDay(tbody, groups[groupCounter % groups.length], dayName, dateStr);
+                        renderRows(tbody, groups[groupCounter % groups.length], null, dayName, dateStr, 3, rowClass, false);
                         groupCounter++;
                     }
                     current.setDate(current.getDate() + 1);
                 }
             } catch (e) {
-                console.error(e);
-                alert("حدث خطأ: " + e.message);
+                alert("خطأ: " + e.message);
             }
         }
 
-        // دالة خاصة بيوم الجمعة لعرض مجموعة يمين ومجموعة يسار
-        function renderFridaySideBySide(tbody, groupR, groupL, day, date) {
-            const pharR = groupR.pharmacies || [];
-            const pharL = groupL.pharmacies || [];
+        function renderRows(tbody, g1, g2, day, dateStr, rowSpan, rowClass, isFriday) {
+            const phar1 = g1.pharmacies || [];
+            const phar2 = g2 ? g2.pharmacies : [];
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < rowSpan; i++) {
                 const row = tbody.insertRow();
-                row.className = "friday-row";
+                row.classList.add(rowClass);
 
-                // خلية اليوم والتاريخ تدمج 6 صفوف فقط
                 if (i === 0) {
-                    const cDay = row.insertCell(); cDay.rowSpan = 6; cDay.className = "day-cell";
+                    const cDay = row.insertCell(); cDay.rowSpan = rowSpan; cDay.className = "day-cell";
                     cDay.innerHTML = `<div class="vertical-text">${day}</div>`;
-                    const cDate = row.insertCell(); cDate.rowSpan = 6; cDate.className = "date-cell";
-                    cDate.innerHTML = `<div class="vertical-text">${date}</div>`;
+                    const cDate = row.insertCell(); cDate.rowSpan = rowSpan; cDate.className = "date-cell";
+                    cDate.innerHTML = `<div class="vertical-text">${dateStr}</div>`;
                 }
 
-                // المجموعة الثانية (يسار)
-                const pL = pharL[i];
-                const nameL = row.insertCell(); nameL.className = "ph-name"; nameL.innerText = pL ? pL.name : "---";
-                const locL = row.insertCell(); locL.className = "ph-loc"; locL.innerText = pL ? pL.loc : "---";
-                
-
-                // المجموعة الأولى (يمين)
-                const pR = pharR[i];
-                const nameR = row.insertCell(); nameR.className = "ph-name"; nameR.innerText = pR ? pR.name : "---";
-                const locR = row.insertCell(); locR.className = "ph-loc"; locR.innerText = pR ? pR.loc : "---";
-                
+                if (isFriday) {
+                    const pL = phar2[i];
+                    row.insertCell().innerText = pL ? pL.name : "---";
+                    row.insertCell().innerText = pL ? pL.loc : "---";
+                    const pR = phar1[i];
+                    row.insertCell().innerText = pR ? pR.name : "---";
+                    row.insertCell().innerText = pR ? pR.loc : "---";
+                } else {
+                    const pLeft = phar1[i * 2 + 1];
+                    row.insertCell().innerText = pLeft ? pLeft.name : "---";
+                    row.insertCell().innerText = pLeft ? pLeft.loc : "---";
+                    const pRight = phar1[i * 2];
+                    row.insertCell().innerText = pRight ? pRight.name : "---";
+                    row.insertCell().innerText = pRight ? pRight.loc : "---";
+                }
             }
         }
 
-        // دالة الأيام العادية (التقسيم الأفقي التقليدي)
-        function renderNormalDay(tbody, group, day, date) {
-            const pharmacies = group.pharmacies || [];
-            for (let i = 0; i < 3; i++) {
-                const row = tbody.insertRow();
-                
-                if (i === 0) {
-                    const cDay = row.insertCell(); cDay.rowSpan = 3; cDay.className = "day-cell";
-                    cDay.innerHTML = `<div class="vertical-text">${day}</div>`;
-                    const cDate = row.insertCell(); cDate.rowSpan = 3; cDate.className = "date-cell";
-                    cDate.innerHTML = `<div class="vertical-text">${date}</div>`;
-                }
-
-                const p1 = pharmacies[i * 2];
-                const p2 = pharmacies[(i * 2) + 1];
-
-                // صيدلية 2
-                const name2 = row.insertCell(); name2.className = "ph-name"; name2.innerText = p2 ? p2.name : "---";
-                const loc2 = row.insertCell(); loc2.className = "ph-loc"; loc2.innerText = p2 ? p2.loc : "---";
-                
-                
-                // صيدلية 1
-                const name1 = row.insertCell(); name1.className = "ph-name"; name1.innerText = p1 ? p1.name : "---";
-                const loc1 = row.insertCell(); loc1.className = "ph-loc"; loc1.innerText = p1 ? p1.loc : "---";
-                
-            }
+        function exportToExcel() {
+            const table = document.getElementById("scheduleTable");
+            const wb = XLSX.utils.table_to_book(table);
+            XLSX.writeFile(wb, "جدول_المناوبات.xlsx");
         }
     </script>
 </body>
