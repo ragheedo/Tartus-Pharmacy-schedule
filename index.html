@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام جدولة المناوبات الذكي - ألوان متناسقة</title>
+    <title>نظام جدولة المناوبات الذكي - تنسيق دقيق</title>
     
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     
@@ -19,19 +19,21 @@
             text-align: center; 
         }
 
-        table { width: 100%; border-collapse: collapse; border: 2.5px solid black; table-layout: fixed; }
+        table { width: 100%; border-collapse: collapse; border: 2.5px solid black; }
         td, th { border: 1.5px solid black; padding: 8px; text-align: center; vertical-align: middle; font-weight: bold; overflow: hidden; }
         
-        /* جعل الاسم والعنوان يظهران بدون خلفيات منفصلة ليتخذا لون الصف */
+        /* سطر الوقت كفاصل مستقل تماماً */
+        .time-header-row { background-color: #2c3e50 !important; color: #fff !important; font-size: 15px; height: 40px; }
+        .time-header-row td { border: 2px solid black; }
+
         .ph-name, .ph-loc { background-color: transparent !important; }
         .ph-name { width: 150px; font-size: 15px; color: #000; }
         .ph-loc { font-size: 12px; font-weight:800; color: #333; }
 
-        /* تعديل خلايا اليوم والتاريخ لتظل بيضاء دائماً */
-        .day-cell, .date-cell { width: 45px; background-color: #fff !important; }
+        .day-cell, .date-cell { width: 45px !important;height: 20px; background-color: #fff !important; height: auto; padding: 0;}
 
         [contenteditable="true"]:hover { background-color: rgba(255,255,255,0.5); cursor: edit; }
-        [contenteditable="true"]:focus { outline: 2px solid #2c3e50; background: #fff; }
+        [contenteditable="true"]:focus { outline: 2px solid #fff; background: rgba(255,255,255,0.2); }
 
         .vertical-text { 
             writing-mode: vertical-rl; 
@@ -40,7 +42,6 @@
             font-size: 16px;
         }
 
-        /* ألوان الأيام الموحدة */
         .day-sat { background-color: #e3f2fd !important; }
         .day-sun { background-color: #fce4ec !important; }
         .day-mon { background-color: #f1f8e9 !important; }
@@ -69,7 +70,7 @@
         <button onclick="buildTable()">توليد الجدول</button>
     </div>
 
-    <span class="edit-hint">* يمكنك الضغط على أي اسم أو عنوان لتعديله يدوياً.</span>
+    <span class="edit-hint">* يمكنك الضغط على أي خلية لتعديلها يدوياً.</span>
 
     <table id="scheduleTable">
         <tbody></tbody>
@@ -82,6 +83,30 @@
 
     <script>
         const dayClasses = ["day-sun", "day-mon", "day-tue", "day-wed", "day-thu", "day-fri", "day-sat"];
+
+        function addTimeHeader(tbody, text) {
+            const row = tbody.insertRow();
+            row.className = "time-header-row";
+            const cell = row.insertCell();
+            cell.colSpan = 6; 
+            cell.contentEditable = "true";
+            cell.innerText = text;
+        }
+
+        function addFridayTimeHeader(tbody) {
+            const row = tbody.insertRow();
+            row.className = "time-header-row";
+            const cellL = row.insertCell(); 
+            cellL.colSpan = 4; 
+            cellL.innerText = "المجموعة اليمنى: 8م - 9ص";
+            cellL.contentEditable = "true";
+            cellL.style.borderLeft = "2px solid white";
+
+            const cellR = row.insertCell(); 
+            cellR.colSpan = 2; 
+            cellR.innerText = "المجموعة اليسرى: 8م - 9ص"; 
+            cellR.contentEditable = "true";
+        }
 
         async function buildTable() {
             try {
@@ -100,18 +125,21 @@
                 tbody.innerHTML = "";
                 
                 let groupCounter = startGroupNum;
+                let isFirstLoop = true;
 
                 while (current <= endLimit) {
                     const dayIndex = current.getDay();
                     const dayName = current.toLocaleDateString('ar-EG', {weekday: 'long'});
-                    const d = current.getDate().toString().padStart(2, '0');
-                    const m = (current.getMonth()+1).toString().padStart(2, '0');
-                    const y = current.getFullYear();
-                    const dateStr = `${y}/${m}/${d}`; 
-                    
+                    const dateStr = `${current.getFullYear()}/${(current.getMonth()+1).toString().padStart(2, '0')}/${current.getDate().toString().padStart(2, '0')}`; 
                     const rowClass = dayClasses[dayIndex];
 
+                    // إضافة سطر الوقت للأيام العادية (في أول يوم أو كل سبت)
+                    if ((isFirstLoop && dayIndex !== 5) || dayIndex === 6) { 
+                        addTimeHeader(tbody, "وقت مناوبة الأيام العادية: من الساعة 8:00 مساءً حتى 9:00 صباحاً");
+                    }
+
                     if (dayIndex === 5) {
+                        addFridayTimeHeader(tbody);
                         const gR = groups[groupCounter % groups.length]; groupCounter++;
                         const gL = groups[groupCounter % groups.length]; groupCounter++;
                         renderRows(tbody, gR, gL, dayName, dateStr, 6, rowClass, true);
@@ -119,6 +147,8 @@
                         renderRows(tbody, groups[groupCounter % groups.length], null, dayName, dateStr, 3, rowClass, false);
                         groupCounter++;
                     }
+                    
+                    isFirstLoop = false;
                     current.setDate(current.getDate() + 1);
                 }
             } catch (e) {
@@ -132,23 +162,26 @@
 
             for (let i = 0; i < rowSpan; i++) {
                 const row = tbody.insertRow();
-                row.classList.add(rowClass); // تطبيق لون اليوم على كامل الصف
+                row.classList.add(rowClass);
 
                 if (i === 0) {
-                    const cDay = row.insertCell(); cDay.rowSpan = rowSpan; cDay.className = "day-cell";
+                    const cDay = row.insertCell(); 
+                    cDay.rowSpan = rowSpan; 
+                    cDay.className = "day-cell";
                     cDay.innerHTML = `<div class="vertical-text">${day}</div>`;
-                    const cDate = row.insertCell(); cDate.rowSpan = rowSpan; cDate.className = "date-cell";
+                    
+                    const cDate = row.insertCell(); 
+                    cDate.rowSpan = rowSpan; 
+                    cDate.className = "date-cell";
                     cDate.innerHTML = `<div class="vertical-text">${dateStr}</div>`;
                 }
 
                 if (isFriday) {
-                    // توزيع الجمعة (الاسم ثم العنوان للمجموعة اليسرى ثم الاسم والعنوان لليمنى)
                     addEditableCell(row, phar2[i], "name");
                     addEditableCell(row, phar2[i], "loc");
                     addEditableCell(row, phar1[i], "name");
                     addEditableCell(row, phar1[i], "loc");
                 } else {
-                    // توزيع الأيام العادية
                     addEditableCell(row, phar1[i * 2 + 1], "name");
                     addEditableCell(row, phar1[i * 2 + 1], "loc");
                     addEditableCell(row, phar1[i * 2], "name");
