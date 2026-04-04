@@ -41,6 +41,11 @@
             white-space: nowrap; 
             font-size: 16px;
         }
+        .verticaldate-text { 
+            writing-mode: vertical-rl; 
+            white-space: nowrap; 
+            font-size: 16px;
+        }
 
         .day-sat { background-color: #e3f2fd !important; }
         .day-sun { background-color: #fce4ec !important; }
@@ -173,7 +178,7 @@
                     const cDate = row.insertCell(); 
                     cDate.rowSpan = rowSpan; 
                     cDate.className = "date-cell";
-                    cDate.innerHTML = `<div class="vertical-text">${dateStr}</div>`;
+                    cDate.innerHTML = `<div class="verticaldate-text">${dateStr}</div>`;
                 }
 
                 if (isFriday) {
