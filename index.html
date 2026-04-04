@@ -105,13 +105,15 @@
 
                 // المجموعة الثانية (يسار)
                 const pL = pharL[i];
-                const locL = row.insertCell(); locL.className = "ph-loc"; locL.innerText = pL ? pL.loc : "---";
                 const nameL = row.insertCell(); nameL.className = "ph-name"; nameL.innerText = pL ? pL.name : "---";
+                const locL = row.insertCell(); locL.className = "ph-loc"; locL.innerText = pL ? pL.loc : "---";
+                
 
                 // المجموعة الأولى (يمين)
                 const pR = pharR[i];
-                const locR = row.insertCell(); locR.className = "ph-loc"; locR.innerText = pR ? pR.loc : "---";
                 const nameR = row.insertCell(); nameR.className = "ph-name"; nameR.innerText = pR ? pR.name : "---";
+                const locR = row.insertCell(); locR.className = "ph-loc"; locR.innerText = pR ? pR.loc : "---";
+                
             }
         }
 
@@ -132,12 +134,14 @@
                 const p2 = pharmacies[(i * 2) + 1];
 
                 // صيدلية 2
-                const loc2 = row.insertCell(); loc2.className = "ph-loc"; loc2.innerText = p2 ? p2.loc : "---";
                 const name2 = row.insertCell(); name2.className = "ph-name"; name2.innerText = p2 ? p2.name : "---";
+                const loc2 = row.insertCell(); loc2.className = "ph-loc"; loc2.innerText = p2 ? p2.loc : "---";
+                
                 
                 // صيدلية 1
-                const loc1 = row.insertCell(); loc1.className = "ph-loc"; loc1.innerText = p1 ? p1.loc : "---";
                 const name1 = row.insertCell(); name1.className = "ph-name"; name1.innerText = p1 ? p1.name : "---";
+                const loc1 = row.insertCell(); loc1.className = "ph-loc"; loc1.innerText = p1 ? p1.loc : "---";
+                
             }
         }
     </script>
