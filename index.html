@@ -103,13 +103,13 @@
             row.className = "time-header-row";
             const cellL = row.insertCell(); 
             cellL.colSpan = 4; 
-            cellL.innerText = "المجموعة اليمنى: 8م - 9ص";
+            cellL.innerText = "الجمعة نهارا: 8 صباحا - 4 مساء";
             cellL.contentEditable = "true";
             cellL.style.borderLeft = "2px solid white";
 
             const cellR = row.insertCell(); 
             cellR.colSpan = 2; 
-            cellR.innerText = "المجموعة اليسرى: 8م - 9ص"; 
+            cellR.innerText = "الجمعة ليلا: 4 مساء - 12 ليلا"; 
             cellR.contentEditable = "true";
         }
 
@@ -140,7 +140,7 @@
 
                     // إضافة سطر الوقت للأيام العادية (في أول يوم أو كل سبت)
                     if ((isFirstLoop && dayIndex !== 5) || dayIndex === 6) { 
-                        addTimeHeader(tbody, "وقت مناوبة الأيام العادية: من الساعة 8:00 مساءً حتى 9:00 صباحاً");
+                        addTimeHeader(tbody, "وقت مناوبة الأيام العادية: من الساعة 8:00 مساءً حتى 12:00 ليلا");
                     }
 
                     if (dayIndex === 5) {
