@@ -140,7 +140,10 @@
 
                     // إضافة سطر الوقت للأيام العادية (في أول يوم أو كل سبت)
                     if ((isFirstLoop && dayIndex !== 5) || dayIndex === 6) { 
-                        addTimeHeader(tbody, "وقت مناوبة الأيام العادية: من الساعة 8:00 مساءً حتى 12:00 ليلا");
+                        addTimeHeader(tbody, " من الساعة 8:00 مساءً حتى 12:00 ليلا");
+                    }
+                    if ( dayIndex === 4) { 
+                        addTimeHeader(tbody, " من الساعة 4:00 مساءً حتى 12:00 ليلا");
                     }
 
                     if (dayIndex === 5) {
