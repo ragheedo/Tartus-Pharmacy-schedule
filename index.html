@@ -22,7 +22,6 @@
         table { width: 100%; border-collapse: collapse; border: 2.5px solid black; }
         td, th { border: 1.5px solid black; padding: 8px; text-align: center; vertical-align: middle; font-weight: bold; overflow: hidden; }
         
-        /* سطر الوقت كفاصل مستقل تماماً */
         .time-header-row { background-color: #2c3e50 !important; color: #fff !important; font-size: 15px; height: 40px; }
         .time-header-row td { border: 2px solid black; }
 
@@ -30,7 +29,7 @@
         .ph-name { width: 150px; font-size: 15px; color: #000; }
         .ph-loc { font-size: 15px; font-weight:bold; color: #333; font-family: 'Arial' !important;}
 
-        .day-cell, .date-cell { width: 45px !important;height: 20px; background-color: #fff !important; height: auto; padding-right:20px;}
+        .day-cell, .date-cell { width: 45px !important; height: 20px; background-color: #fff !important; height: auto; padding-right:20px;}
 
         [contenteditable="true"]:hover { background-color: rgba(255,255,255,0.5); cursor: edit; }
         [contenteditable="true"]:focus { outline: 2px solid #fff; background: rgba(255,255,255,0.2); }
@@ -61,9 +60,195 @@
             border: none; cursor: pointer; font-size: 16px; border-radius: 5px; margin: 5px; 
         }
         .btn-excel { background: #27ae60; }
+        .btn-print { background: #8e44ad; }
         .edit-hint { color: #e67e22; font-size: 14px; margin-bottom: 10px; display: block; text-align: center; }
 
-        @media print { .setup-area, .actions, .edit-hint { display: none; } body { margin: 0; } }
+        /* ===== نافذة اختيار الأسبوع ===== */
+        #printModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        #printModal.open { display: flex; }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px 35px;
+            min-width: 360px;
+            max-width: 480px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            direction: rtl;
+        }
+        .modal-box h2 {
+            margin: 0 0 8px;
+            font-size: 22px;
+            color: #2c3e50;
+        }
+        .modal-box p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .week-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 340px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 4px 2px;
+        }
+        .week-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f4f6f8;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: right;
+        }
+        .week-item:hover { background: #e8f4fd; border-color: #3498db; }
+        .week-item.selected { background: #d6eaf8; border-color: #2980b9; }
+        .week-item input[type="checkbox"] {
+            width: 18px; height: 18px; cursor: pointer; accent-color: #2980b9;
+            flex-shrink: 0;
+        }
+        .week-label { font-size: 15px; font-weight: bold; color: #2c3e50; }
+        .week-dates { font-size: 12px; color: #777; margin-top: 2px; }
+
+        .modal-actions { display: flex; gap: 10px; justify-content: center; }
+        .modal-actions button { margin: 0; font-size: 15px; padding: 10px 22px; }
+        .btn-cancel { background: #95a5a6; }
+        .btn-confirm-print { background: #8e44ad; }
+        .select-all-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 6px 14px;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 6px;
+            font-size: 14px; color: #555; cursor: pointer;
+        }
+        .select-all-row input { width: 16px; height: 16px; accent-color: #2980b9; }
+
+        /* ===== طباعة ===== */
+        #printContainer { display: none; }
+
+        @media print {
+            .setup-area, .actions, .edit-hint, #printModal, #scheduleTable { display: none !important; }
+            
+            @page {
+                size: A4 portrait;
+                margin: 6mm 7mm;
+            }
+
+            html, body { margin: 0; height: 100%; }
+            #printContainer { display: block; }
+
+            .print-week-block {
+                page-break-after: always;
+                page-break-inside: avoid;
+                width: 100%;
+                /* يمتد ليملأ ارتفاع الصفحة كاملاً */
+                min-height: calc(297mm - 12mm);
+                display: flex;
+                flex-direction: column;
+                box-sizing: border-box;
+            }
+            .print-week-block:last-child { page-break-after: auto; }
+
+            .print-header {
+                text-align: center;
+                font-size: 18px;
+                font-weight: bold;
+                font-family: 'Arial', Tahoma, sans-serif;
+                /* margin-bottom: 3px; */
+                padding: 4px 0;
+                border: 2px solid black;
+                flex-shrink: 0;
+            }
+
+            .print-week-block table {
+                width: 100%;
+                border-collapse: collapse;
+                border: 2px solid black;
+                /* الجدول يمتد ليملأ المساحة المتبقية */
+                flex: 1;
+                table-layout: fixed;
+            }
+
+            .print-week-block td, .print-week-block th {
+                border: 1px solid black;
+                padding: 1px 2px;
+                text-align: center;
+                vertical-align: middle;
+                font-weight: bold;
+                word-break: break-word;
+                background-color: #fff !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .print-week-block .time-header-row td {
+                color: #000 !important;
+                background-color: #fff !important;
+                font-size: 17px;
+                font-weight: 1500;
+                border: #000 solid 3px;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* عمود اليوم والتاريخ — يتحكم بهم colgroup */
+            .print-week-block .day-cell {
+                padding: 5px !important;
+                background-color: #fff !important;
+                overflow: hidden;
+            }
+            .print-week-block .date-cell {
+                padding: 6px !important;
+                background-color: #fff !important;
+                overflow: hidden;
+            }
+
+            /* النص العمودي لليوم والتاريخ */
+            .print-week-block .vertical-text {
+                writing-mode: vertical-rl;
+                transform: rotate(180deg);
+                white-space: nowrap;
+                font-size: 15px;
+                font-weight: bold;
+            }
+            .print-week-block .verticaldate-text {
+                writing-mode: vertical-rl;
+                transform: rotate(180deg);
+                white-space: nowrap;
+                font-size: 15px;
+                font-weight: bold;
+            }
+
+            /* اسم الصيدلية — صغير ومضغوط */
+            .print-week-block .ph-name {
+                font-size: 12px !important;
+                font-weight: bold;
+                color: #000 !important;
+            }
+
+            /* عنوان الصيدلية — أكبر وأوضح */
+            .print-week-block .ph-loc {
+                font-size: 12px !important;
+                font-weight: bold;
+                color: #000 !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -81,36 +266,62 @@
         <tbody></tbody>
     </table>
 
+    <!-- حاوية الطباعة - تُبنى ديناميكياً -->
+    <div id="printContainer"></div>
+
     <div class="actions">
         <button class="btn-excel" onclick="exportToExcel()">تحميل كملف Excel</button>
-        <button onclick="window.print()">طباعة الجدول / PDF</button>
+        <button class="btn-print" onclick="openPrintModal()">🖨️ طباعة الجدول</button>
+    </div>
+
+    <!-- نافذة اختيار الأسبوع -->
+    <div id="printModal">
+        <div class="modal-box">
+            <h2>🖨️ اختر الأسبوع للطباعة</h2>
+            <p>كل أسبوع سيُطبع في صفحة مستقلة</p>
+            <div class="select-all-row" onclick="toggleSelectAll()">
+                <input type="checkbox" id="selectAllChk"> 
+                <span>تحديد الكل</span>
+            </div>
+            <div class="week-list" id="weekList"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closePrintModal()">إلغاء</button>
+                <button class="btn-confirm-print" onclick="confirmPrint()">طباعة المحدد</button>
+            </div>
+        </div>
     </div>
 
     <script>
         const dayClasses = ["day-sun", "day-mon", "day-tue", "day-wed", "day-thu", "day-fri", "day-sat"];
 
-        function addTimeHeader(tbody, text) {
+        // تتبع الأسابيع: كل صف يُعلَّم بـ data-week
+        let weekMeta = []; // [{label, startDate, endDate, rowIndices:[]}]
+
+        function addTimeHeader(tbody, text, weekIdx) {
             const row = tbody.insertRow();
             row.className = "time-header-row";
+            row.dataset.week = weekIdx;
             const cell = row.insertCell();
             cell.colSpan = 6; 
             cell.contentEditable = "true";
             cell.innerText = text;
+            return row;
         }
 
-        function addFridayTimeHeader(tbody) {
+        function addFridayTimeHeader(tbody, weekIdx) {
             const row = tbody.insertRow();
             row.className = "time-header-row";
+            row.dataset.week = weekIdx;
             const cellL = row.insertCell(); 
             cellL.colSpan = 4; 
             cellL.innerText = "من الساعة 8:00 صباحا لغاية الساعة 4:00 مساء";
             cellL.contentEditable = "true";
             cellL.style.borderLeft = "2px solid white";
-
             const cellR = row.insertCell(); 
             cellR.colSpan = 2; 
             cellR.innerText = "من الساعة 4:00 مساء لغاية الساعة 12:00 ليلا"; 
             cellR.contentEditable = "true";
+            return row;
         }
 
         async function buildTable() {
@@ -128,34 +339,62 @@
                 let current = new Date(startVal);
                 const endLimit = new Date(endVal);
                 tbody.innerHTML = "";
-                
+                weekMeta = [];
+
                 let groupCounter = startGroupNum;
                 let isFirstLoop = true;
+                let currentWeekIdx = -1;
+                let currentWeekStart = null;
 
                 while (current <= endLimit) {
-                    const dayIndex = current.getDay();
+                    const dayIndex = current.getDay(); // 0=Sun, 6=Sat
                     const dayName = current.toLocaleDateString('ar-EG', {weekday: 'long'});
-                    const dateStr = `${current.getFullYear()}/${(current.getMonth()+1).toString().padStart(2, '0')}/${current.getDate().toString().padStart(2, '0')}`; 
+                    const dateStr = `${current.getFullYear()}/${(current.getMonth()+1).toString().padStart(2,'0')}/${current.getDate().toString().padStart(2,'0')}`;
                     const rowClass = dayClasses[dayIndex];
 
-                    // إضافة سطر الوقت للأيام العادية (في أول يوم أو كل سبت)
-                    if ((isFirstLoop && dayIndex !== 5) || dayIndex === 6) { 
-                        addTimeHeader(tbody, " من الساعة 8:00 مساءً لغاية الساعة 12:00 ليلا");
+                    // بداية أسبوع جديد: كل سبت أو أول يوم
+                    const isWeekStart = (dayIndex === 6) || isFirstLoop;
+
+                    if (isWeekStart) {
+                        currentWeekIdx++;
+                        currentWeekStart = new Date(current);
+                        // احسب نهاية الأسبوع (الجمعة التالية أو نهاية النطاق)
+                        let weekEnd = new Date(current);
+                        if (dayIndex === 6) {
+                            weekEnd.setDate(weekEnd.getDate() + 6);
+                        } else {
+                            // أول يوم ليس سبتاً: ابحث عن الجمعة القادمة
+                            const daysToFri = (5 - dayIndex + 7) % 7;
+                            weekEnd.setDate(weekEnd.getDate() + daysToFri);
+                        }
+                        if (weekEnd > endLimit) weekEnd = new Date(endLimit);
+                        const wLabel = `الأسبوع ${currentWeekIdx + 1}`;
+                        const wStartStr = formatDate(currentWeekStart);
+                        const wEndStr = formatDate(weekEnd);
+                        weekMeta.push({ label: wLabel, startDate: wStartStr, endDate: wEndStr, startDateObj: new Date(currentWeekStart), endDateObj: new Date(weekEnd), rowIndices: [] });
                     }
-                    if ( dayIndex === 4) { 
-                        addTimeHeader(tbody, " من الساعة 4:00 مساءً لغاية الساعة 12:00 ليلا");
+
+                    // سطر الوقت
+                    if ((isFirstLoop && dayIndex !== 5) || dayIndex === 6) {
+                        const hr = addTimeHeader(tbody, "من الساعة 8:00 مساءً لغاية الساعة 12:00 ليلا", currentWeekIdx);
+                        weekMeta[currentWeekIdx].rowIndices.push(hr.rowIndex);
+                    }
+                    if (dayIndex === 4) {
+                        const hr = addTimeHeader(tbody, "من الساعة 4:00 مساءً لغاية الساعة 12:00 ليلا", currentWeekIdx);
+                        weekMeta[currentWeekIdx].rowIndices.push(hr.rowIndex);
                     }
 
                     if (dayIndex === 5) {
-                        addFridayTimeHeader(tbody);
+                        const fh = addFridayTimeHeader(tbody, currentWeekIdx);
+                        weekMeta[currentWeekIdx].rowIndices.push(fh.rowIndex);
                         const gR = groups[groupCounter % groups.length]; groupCounter++;
                         const gL = groups[groupCounter % groups.length]; groupCounter++;
-                        renderRows(tbody, gR, gL,  dayName, dateStr, 6, rowClass, true);
+                        renderRows(tbody, gR, gL, dayName, dateStr, 6, rowClass, true, currentWeekIdx);
                     } else {
-                        renderRows(tbody, groups[groupCounter % groups.length], null, dayName, dateStr, 3, rowClass, false);
+                        renderRows(tbody, groups[groupCounter % groups.length], null, dayName, dateStr, 3, rowClass, false, currentWeekIdx);
                         groupCounter++;
                     }
-                    
+
                     isFirstLoop = false;
                     current.setDate(current.getDate() + 1);
                 }
@@ -164,13 +403,19 @@
             }
         }
 
-        function renderRows(tbody, g1, g2, day, dateStr, rowSpan, rowClass, isFriday) {
+        function formatDate(d) {
+            return `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}`;
+        }
+
+        function renderRows(tbody, g1, g2, day, dateStr, rowSpan, rowClass, isFriday, weekIdx) {
             const phar1 = g1.pharmacies || [];
             const phar2 = g2 ? g2.pharmacies : [];
 
             for (let i = 0; i < rowSpan; i++) {
                 const row = tbody.insertRow();
                 row.classList.add(rowClass);
+                row.dataset.week = weekIdx;
+                weekMeta[weekIdx].rowIndices.push(row.rowIndex);
 
                 if (i === 0) {
                     const cDay = row.insertCell(); 
@@ -185,13 +430,11 @@
                 }
 
                 if (isFriday) {
-                    
                     addEditableCell(row, phar1[i], "name");
                     addEditableCell(row, phar1[i], "loc");
                     addEditableCell(row, phar2[i], "name");
                     addEditableCell(row, phar2[i], "loc");
                 } else {
-                    
                     addEditableCell(row, phar1[i * 2], "name");
                     addEditableCell(row, phar1[i * 2], "loc");
                     addEditableCell(row, phar1[i * 2 + 1], "name");
@@ -205,6 +448,138 @@
             cell.className = type === "name" ? "ph-name" : "ph-loc";
             cell.innerText = phar ? phar[type] : "---";
             cell.contentEditable = "true";
+        }
+
+        // ===== منطق نافذة الطباعة =====
+
+        function openPrintModal() {
+            if (weekMeta.length === 0) {
+                return alert("يرجى توليد الجدول أولاً.");
+            }
+            const list = document.getElementById('weekList');
+            list.innerHTML = '';
+            weekMeta.forEach((w, i) => {
+                const item = document.createElement('div');
+                item.className = 'week-item';
+                item.dataset.idx = i;
+                item.innerHTML = `
+                    <input type="checkbox" id="wk${i}" value="${i}" onchange="updateItemStyle(this)">
+                    <div>
+                        <div class="week-label">${w.label}</div>
+                        <div class="week-dates">من ${w.startDate} إلى ${w.endDate}</div>
+                    </div>
+                `;
+                item.addEventListener('click', function(e) {
+                    if (e.target.tagName !== 'INPUT') {
+                        const chk = this.querySelector('input');
+                        chk.checked = !chk.checked;
+                        updateItemStyle(chk);
+                    }
+                    updateSelectAll();
+                });
+                list.appendChild(item);
+            });
+            document.getElementById('selectAllChk').checked = false;
+            document.getElementById('printModal').classList.add('open');
+        }
+
+        function updateItemStyle(chk) {
+            const item = chk.closest('.week-item');
+            item.classList.toggle('selected', chk.checked);
+            updateSelectAll();
+        }
+
+        function updateSelectAll() {
+            const all = document.querySelectorAll('#weekList input[type="checkbox"]');
+            const checked = document.querySelectorAll('#weekList input[type="checkbox"]:checked');
+            document.getElementById('selectAllChk').checked = all.length > 0 && all.length === checked.length;
+        }
+
+        function toggleSelectAll() {
+            const masterChk = document.getElementById('selectAllChk');
+            // نقرة على الصف تعكس الـ checkbox
+            masterChk.checked = !masterChk.checked;
+            document.querySelectorAll('#weekList input[type="checkbox"]').forEach(chk => {
+                chk.checked = masterChk.checked;
+                updateItemStyle(chk);
+            });
+        }
+
+        function closePrintModal() {
+            document.getElementById('printModal').classList.remove('open');
+        }
+
+        // أسماء الأشهر بالعربية
+        const arabicMonths = ["كانون الثاني","شباط","آذار","نيسان","أيار","حزيران","تموز","آب","أيلول","تشرين الأول","تشرين الثاني","كانون الأول"];
+
+        function getMonthLabel(w) {
+            const sm = w.startDateObj.getMonth();
+            const sy = w.startDateObj.getFullYear();
+            const em = w.endDateObj.getMonth();
+            const ey = w.endDateObj.getFullYear();
+            if (sm === em && sy === ey) {
+                return `الصيدليات المناوبة خلال شهر ${arabicMonths[sm]} ${sy}`;
+            } else if (sy === ey) {
+                return `الصيدليات المناوبة خلال شهري ${arabicMonths[sm]} و${arabicMonths[em]} ${sy}`;
+            } else {
+                return `الصيدليات المناوبة خلال شهري ${arabicMonths[sm]} ${sy} و${arabicMonths[em]} ${ey}`;
+            }
+        }
+
+        function confirmPrint() {
+            const selected = [...document.querySelectorAll('#weekList input[type="checkbox"]:checked')]
+                .map(c => parseInt(c.value));
+
+            if (selected.length === 0) {
+                return alert("يرجى تحديد أسبوع واحد على الأقل.");
+            }
+
+            const container = document.getElementById('printContainer');
+            container.innerHTML = '';
+            const tbody = document.querySelector('#scheduleTable tbody');
+
+            selected.sort((a, b) => a - b).forEach(weekIdx => {
+                const w = weekMeta[weekIdx];
+
+                // بلوك الأسبوع
+                const block = document.createElement('div');
+                block.className = 'print-week-block';
+
+                // الترويسة
+                const header = document.createElement('div');
+                header.className = 'print-header';
+                header.textContent = getMonthLabel(w);
+                block.appendChild(header);
+
+                // الجدول - نسخ الصفوف المختارة
+                const tbl = document.createElement('table');
+
+                // تحديد عرض الأعمدة بشكل صريح لإجبار المتصفح على احترامها عند الطباعة
+                // عمود اليوم | عمود التاريخ | اسم1 | عنوان1 | اسم2 | عنوان2
+                const colgroup = document.createElement('colgroup');
+                ['10mm', '10mm', '30mm', 'auto', '30mm', 'auto'].forEach(cw => {
+                    const col = document.createElement('col');
+                    col.style.width = cw;
+                    colgroup.appendChild(col);
+                });
+                tbl.appendChild(colgroup);
+
+                const tb = document.createElement('tbody');
+                w.rowIndices.forEach(rowIndex => {
+                    const origRow = tbody.rows[rowIndex];
+                    if (!origRow) return;
+                    tb.appendChild(origRow.cloneNode(true));
+                });
+                tbl.appendChild(tb);
+                block.appendChild(tbl);
+                container.appendChild(block);
+            });
+
+            closePrintModal();
+            window.print();
+
+            // تنظيف بعد الطباعة
+            setTimeout(() => { container.innerHTML = ''; }, 2000);
         }
 
         function exportToExcel() {
